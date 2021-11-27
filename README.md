@@ -23,7 +23,27 @@ The amount you have to stake, known as _bond_, is `100,000 REN` (currently about
 ### What is the RenPool?
 
 The RenPool project allows users to participate in **REN** staking pools,
-which are rewarded with a share of fees earned by the _darknode_.
+which are rewarded with a share of fees earned by the _Darknode_.
+
+> **You can earn _Darknode_ rewards without having 100K REN nor operaing a _Darknode_**
+
+### RenPool Features
+
+RenPool allows any staker to
+
+- create a new pool by becoming the node operator of a new _Darknode_.
+- deposit **REN**s into a pool and when it reaches 100K, the RenPool team will set up and manage a new _Darknode_.
+- **[TODO]** request a withdraw of a running pool. When another staker wants to take your place, they transfer the staked **REN**s to you, and they become part of the pool. However, keep in mind that you will lose your rewards for that epoch. Instead the new staker will receive it.
+- **[TODO]** automatically deregister a running node when more than 50% of the staked REN collectively requests to withdraw their **REN**.
+
+Moreover, the RenPool team will **never** be in possession of your **REN** tokens nor your rewards.
+
+### **TODO**
+
+- We need to audit the smart contracts
+- What about slashing?
+- Ethereum gas?
+- Explain fees for owner and node operator and staker
 
 ### How RenPool works
 
