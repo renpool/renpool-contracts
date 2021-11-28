@@ -23,15 +23,15 @@ const DECIMALS = 18;
 const DIGITS = bn(10).pow(DECIMALS);
 const POOL_BOND = bn(100_000).mul(DIGITS);
 
-async function main() {
-    console.log(`${chalk.italic('\u{1F680} RenPool contract deployment')}`);
-    console.log(`Using network ${chalk.bold(hre.network.name)} (${chalk.bold(hre.network.config.chainId)})`);
+async function main(print) {
+    print(`${chalk.italic('\u{1F680} RenPool contract deployment')}`);
+    print(`Using network ${chalk.bold(hre.network.name)} (${chalk.bold(hre.network.config.chainId)})`);
 
-    console.log(`> Getting signers to deploy RenPool contract`);
+    print(`> Getting signers to deploy RenPool contract`);
     const [owner] = await ethers.getSigners();
     const nodeOperator = owner;
 
-    console.log(`> Deploying ${chalk.bold('RenPool')} contract`);
+    print(`> Deploying ${chalk.bold('RenPool')} contract`);
     const RenPool = await ethers.getContractFactory('RenPool');
     const renPool = await RenPool.connect(nodeOperator).deploy(
         renTokenAddr,
@@ -43,17 +43,17 @@ async function main() {
         POOL_BOND);
     await renPool.deployed();
 
-    console.log(`> Deployed to ${chalk.bold(renPool.address)} TX ${chalk.bold(renPool.deployTransaction.hash)}`);
+    print(`> Deployed to ${chalk.bold(renPool.address)} TX ${chalk.bold(renPool.deployTransaction.hash)}`);
 
     if (hre.network.name === 'hardhat') {
-        console.log('> Skipping RenPool contract Etherscan verification')
+        print('> Skipping RenPool contract Etherscan verification')
     } else {
-        console.log('> Waiting before verification');
+        print('> Waiting before verification');
         await sleep(30000);
         const balance = await renPool.balanceOf(owner.address);
-        console.log(`  Owner's balance is ${chalk.yellow(balance)}`);
-    
-        console.log('> Verifying RenPool smart contract in Etherscan')
+        print(`  Owner's balance is ${chalk.yellow(balance)}`);
+
+        print('> Verifying RenPool smart contract in Etherscan')
 
         await hre.run("verify:verify", {
             address: renPool.address,
@@ -68,11 +68,19 @@ async function main() {
             ],
         });
     }
+
+    return { renPool }
 }
 
-main()
-    .then(() => process.exit(0))
-    .catch(err => {
-        console.error(err);
-        process.exit(1);
-    });
+if (require.main === module) {
+    main(console.log)
+        .then(() => process.exit(0))
+        .catch(err => {
+            console.error(err);
+            process.exit(1);
+        });
+} else {
+    module.exports = function() {
+        return main(function() {});
+    }
+}
