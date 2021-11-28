@@ -265,3 +265,48 @@ See <https://github.com/crytic/slither> for more information.
 The static analysis has been integrated into our pipeline with GitHub Actions.
 To see the result of the analysis,
 see <https://github.com/Ethernautas/renpool/actions/workflows/analysis.yaml>.
+
+## Query and Send RenVM Transactions (WIP)
+
+Useful for claiming rewards.
+Full docs here <https://renproject.github.io/ren-client-docs/api/>.
+
+### Endpoints
+
+- <https://explorer.renproject.io/>
+- <https://lightnode-testnet.herokuapp.com>
+- <https://lightnode-devnet.herokuapp.com>
+
+### Examples
+
+```http
+POST https://lightnode-testnet.herokuapp.com HTTP/1.1
+Content-Type: application/json
+Accept: application/json
+
+{
+  "method": "ren_queryTxs",
+  "id": 1,
+  "jsonrpc": "2.0",
+  "params": {
+    "txStatus": "done",
+    "offset": "0",
+    "limit": "10"
+  }
+}
+```
+
+```http
+POST https://lightnode-testnet.herokuapp.com/ HTTP/1.1
+Content-Type: application/json
+Accept: application/json
+
+{
+  "method": "ren_queryTx",
+  "id": 1,
+  "jsonrpc": "2.0",
+  "params": {
+      "txHash": "s8BZA6dhMRTOL6nOEo3yAlgdtNQfEdEF4VkVVcXeCcI"
+  }
+}
+```
