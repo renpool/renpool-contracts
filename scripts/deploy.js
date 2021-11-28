@@ -4,12 +4,13 @@ const {
     },
     network: {
         config: {
+            accounts,
             renTokenAddr,
             topRenTokenHolderAddr,
             darknodeRegistryAddr,
             darknodePaymentAddr,
             claimRewardsAddr,
-            gatewayAddr,
+            gatewayRegistryAddr,
         },
         provider,
     } } = require('hardhat');
@@ -43,7 +44,7 @@ async function main() {
     print(`Using network ${chalk.bold(hre.network.name)} (${chalk.bold(hre.network.config.chainId)})`);
 
     print(`Getting signers to deploy RenPool contract`);
-    const [owner] = await ethers.getSigners();
+    const owner = new ethers.Wallet(accounts[0], ethers.provider);
     const nodeOperator = owner;
 
     print(`Deploying ${chalk.bold('RenPool')} contract`);
@@ -53,7 +54,7 @@ async function main() {
         darknodeRegistryAddr,
         darknodePaymentAddr,
         claimRewardsAddr,
-        gatewayAddr,
+        gatewayRegistryAddr,
         owner.address,
         POOL_BOND);
     await renPool.deployed();
@@ -77,7 +78,7 @@ async function main() {
                 darknodeRegistryAddr,
                 darknodePaymentAddr,
                 claimRewardsAddr,
-                gatewayAddr,
+                gatewayRegistryAddr,
                 owner.address,
                 POOL_BOND
             ],
