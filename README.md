@@ -53,7 +53,8 @@ The stakers can then withdraw their respective percentage of these fees.
 
 ## Getting started
 
-The RenPool project uses the _Yarn_ package manager and the _Hardhat_ [https://hardhat.org/getting-started/](https://hardhat.org/getting-started/) development environment.
+The RenPool project uses the _Yarn_ package manager and the _Hardhat_ [https://hardhat.org/getting-started/](https://hardhat.org/getting-started/) development environment for Ethereum.
+We use [Alchemy](https://www.alchemy.com/) JSON-RPC provider to fork Ethereum networks.
 
 You can skip to the next section if you have a working _Yarn_ installation.
 If not, here is how to install it.
@@ -68,67 +69,75 @@ npm install -g yarn
 yarn install
 ```
 
-### Launch a python virtual env
+### Create an `.env` file from `.env.template`
 
-```bash
->> python -m venv venv # create a new env called venv
->> source venv/bin/activate # activate it
->> deactivate # deactivate it once you are done
+This file defines environment variables read by _Hardhat_.
+
+```sh
+cp .env.template .env
 ```
 
-### Create a new file called `.env` from `.env.template`
+Add your [Alchemy Key](https://docs.alchemy.com/alchemy/introduction/getting-started) to the newly created `.env` file
 
-Add your Metamask mnemonic and Infura project id
+```txt
+ALCHEMY_KEY=<your Alchemy key here>
+```
 
-### Init brownie console
+### Init the _Hardhat_ console
 
-This will create a local blockchain plus 10 `accounts` loaded with eth associated to your Metamask
+This will create a local Blockchain plus 10 local `accounts` loaded with ETH.
 
 ```sh
 yarn hardhat console
 ```
 
-### Mint a ERC20 token called REN and deploy RenPool contract to local net
+### Deploy `RenPool` contract to the local network and mint an ERC20 token called REN
 
-You'll get a fresh instance every time you init the brownie console
+You will get a fresh instance every time you init the _Hardhat_ console.
 
-```sh
->> renToken, renPool = run('deploy')
+```js
+> const { renPool, renToken, faucet } = await require('./scripts/deploy.js')()
 ```
 
-### You can now interact with the `renToken` and `renPool` contracts using any of the `accounts` provided by brownie and any of the contracts' methods
+`RenPool` and `RenToken` are contracts objects, while `faucet` is a function used to mint the REN token.
 
-Get some ren tokens from the faucet
+### You can now interact with the `renPool` and `renToken` contracts
 
-```sh
->> acc = accounts[1]
->> renToken.balanceOf(acc)
->> 0
->> renToken.callFaucet({'from': acc})
->> renToken.balanceOf(acc)
->> 1000000000000000000000
+To interact with the contract you can use any of the signers provided by _Hardhat_.
+
+First, get some REN tokens from the faucet
+
+```js
+> const [signer] = await ethers.getSigners()
+> (await renToken.balanceOf(signer.address)).toString()
+'0'
+> await faucet(renToken, signer)
+> (await renToken.balanceOf(signer.address)).toString()
+'1000000000000000000000000'
 ```
 
-Deposit ren tokens into the ren pool
+Deposit REN tokens into the Ren Pool
 
-```sh
->> tx1 = renToken.approve(renPool, 100, {'from': acc})
->> tx2 = renPool.deposit(100, {'from': acc})
+```js
+> (await renPool.totalPooled()).toString()
+'0'
+> await renToken.connect(signer).approve(renPool.address, 100)
+> await renPool.connect(signer).deposit(100)
 ```
 
-Verify that the ren pool balance has increased
+Verify that the Ren Pool balance has been increased
 
-```sh
->> renPool.totalPooled()
->> 100
+```js
+> (await renPool.totalPooled()).toString()
+'100'
 ```
 
-Withdraw some tokens
+Withdraw some REN tokens
 
-```sh
->> renPool.withdraw(5, {'from': acc})
->> renPool.totalPooled()
->> 95
+```js
+> await renPool.connect(signer).withdraw(5)
+> (await renPool.totalPooled()).toString()
+> 95
 ```
 
 ### Running tests (open a new terminal)
