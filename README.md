@@ -29,12 +29,12 @@ which are rewarded with a share of fees earned by the _Darknode_.
 
 ### RenPool Features
 
-RenPool allows any staker to
+RenPool allows any user to
 
 - create a new pool by becoming the node operator of a new _Darknode_.
 - deposit **REN**s into a pool and when it reaches 100K, the RenPool team will set up and manage a new _Darknode_.
 - **[TODO]** request a withdraw of a running pool. When another staker wants to take your place, they transfer the staked **REN**s to you, and they become part of the pool. However, keep in mind that you will lose your rewards for that epoch. Instead the new staker will receive it.
-- **[TODO]** automatically deregister a running node when more than 50% of the staked REN collectively requests to withdraw their **REN**.
+- **[TODO]** automatically deregister a running node when more than 50% of the staked REN collectively requests to withdraw their share.
 
 Moreover, the RenPool team will **never** be in possession of your **REN** tokens nor your rewards.
 
