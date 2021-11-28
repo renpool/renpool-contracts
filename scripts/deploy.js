@@ -4,7 +4,6 @@ const {
     },
     network: {
         config: {
-            accounts,
             renTokenAddr,
             topRenTokenHolderAddr,
             darknodeRegistryAddr,
@@ -35,6 +34,7 @@ async function faucet(renToken, account) {
     const holder = await ethers.getSigner(topRenTokenHolderAddr);
     const amount = POOL_BOND.mul(10);
     await renToken.connect(holder).transfer(account.address, amount);
+    print(`Given ${chalk.bold(amount)} REN to (${chalk.bold(account.address)})`);
 
     await provider.request({ method: 'hardhat_stopImpersonatingAccount', params: [topRenTokenHolderAddr] });
 }
@@ -44,7 +44,7 @@ async function main() {
     print(`Using network ${chalk.bold(hre.network.name)} (${chalk.bold(hre.network.config.chainId)})`);
 
     print(`Getting signers to deploy RenPool contract`);
-    const owner = new ethers.Wallet(accounts[0], ethers.provider);
+    const [owner] = await ethers.getSigners();
     const nodeOperator = owner;
 
     print(`Deploying ${chalk.bold('RenPool')} contract`);

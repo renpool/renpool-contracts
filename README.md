@@ -126,6 +126,12 @@ This will create a local Blockchain plus 10 local `accounts` loaded with ETH.
 yarn hardhat console
 ```
 
+If you want to use a `mainnet`-fork run
+
+```sh
+FORK=mainnet yarn hardhat console
+```
+
 ### Deploy `RenPool` contract to the local network and mint an ERC20 token called REN
 
 You will get a fresh instance every time you init the _Hardhat_ console.
@@ -175,111 +181,26 @@ Withdraw some REN tokens
 > 95
 ```
 
-### Running tests (open a new terminal)
+## Deploying Smart Contract to a Live Network
 
-```bash
->> brownie test
+First you need to fund a wallet for the target network, _e.g., `kovan` or `mainnet`.
+Then add your private key and your Etherscan API key to the `.env` file.
+The Etherscan API key is used in the deployment process to verify the smart contract.
+See <https://etherscan.io/verifyContract> for more information about smart contract verification on Etherscan.
+We use the [`hardhat-etherscan`](https://hardhat.org/plugins/nomiclabs-hardhat-etherscan.html#using-programmatically) plugin to verify the smart contract.
+
+```txt
+PRIVATE_KEY=<your private key here>
+ETHERSCAN_API_KEY=<your etherscan API key here>
 ```
 
-## Manually deploy client app
-
-[https://www.freecodecamp.org/news/how-to-deploy-a-react-application-to-netlify-363b8a98a985/](https://www.freecodecamp.org/news/how-to-deploy-a-react-application-to-netlify-363b8a98a985/)
-
-Install Netlify CLI: `npm install netlify-cli -g`.
-
-```bash
->> yarn run setEnv:<TARGET_NETWORK>
->> yarn run deploy
-```
-
-The app is deployed to [https://renpool.netlify.app/](https://renpool.netlify.app/)
-
-## Deploy smart contract
-
-1. Get a funded wallet for the target network
-2. Set .env file pointing to the target network
-3. run brownie console
-4. renToken, renPool = run('deploy')
-
-[https://www.quicknode.com/guides/vyper/how-to-write-an-ethereum-smart-contract-using-vyper](https://www.quicknode.com/guides/vyper/how-to-write-an-ethereum-smart-contract-using-vyper)
-
-## Setup and deploy to test networks
-
-1. [https://youtu.be/5jiqOUljfG8](https://youtu.be/5jiqOUljfG8)
-
-2. [https://youtu.be/KNBneUpFaGo](https://youtu.be/KNBneUpFaGo)
-
-3. Add kovan-fork to Development networks:
-`brownie networks add Development kovan-fork host=http://127.0.0.1 cmd=ganache-cli  mnemonic=brownie port=8545 accounts=10 evm_version=istanbul fork=kovan gas_limit=12000000 name="Ganache-CLI (Kovan Fork)" timeout=120`
-
-## Usage
-
-1. Open the Brownie console. Starting the console launches a fresh [Ganache](https://www.trufflesuite.com/ganache) instance in the background.
-
-    ```bash
-    $ brownie console
-    Brownie v1.9.0 - Python development framework for Ethereum
-
-    ReactMixProject is the active project.
-    Launching 'ganache-cli'...
-    Brownie environment is ready.
-    ```
-
-2. Run the [deployment script](scripts/deploy.py) to deploy the project's smart contracts.
-
-    ```python
-    >>> run("deploy")
-    Running 'scripts.deploy.main'...
-    Transaction sent: 0xd1000d04fe99a07db864bcd1095ddf5cb279b43be8e159f94dbff9d4e4809c70
-    Gas price: 0.0 gwei   Gas limit: 6721975
-    SolidityStorage.constructor confirmed - Block: 1   Gas used: 110641 (1.65%)
-    SolidityStorage deployed at: 0xF104A50668c3b1026E8f9B0d9D404faF8E42e642
-
-    Transaction sent: 0xee112392522ed24ac6ab8cc8ba09bfe51c5d699d9d1b39294ba87e5d2a56212c
-    Gas price: 0.0 gwei   Gas limit: 6721975
-    VyperStorage.constructor confirmed - Block: 2   Gas used: 134750 (2.00%)
-    VyperStorage deployed at: 0xB8485421abC325D172652123dBd71D58b8117070
-    ```
-
-3. While Brownie is still running, start the React app in a different terminal.
-
-    ```bash
-    # make sure to use a different terminal, not the brownie console
-    cd client
-    yarn start
-    ```
-
-4. Connect Metamask to the local Ganache network. In the upper right corner, click the network dropdown menu. Select `Localhost 8545`, or:
-
-    ```bash
-    New Custom RPC
-    http://localhost:8545
-    ```
-
-5. Interact with the smart contracts using the web interface or via the Brownie console.
-
-    ```python
-    # get the newest vyper storage contract
-    >>> vyper_storage = VyperStorage[-1]
-
-    # the default sender of the transaction is the contract creator
-    >>> vyper_storage.set(1337)
-    ```
-
-    Any changes to the contracts from the console should show on the website after a refresh, and vice versa.
-
-## Ending a Session
-
-When you close the Brownie console, the Ganache instance also terminates and the deployment artifacts are deleted.
-
-To retain your deployment artifacts (and their functionality) you can launch Ganache yourself prior to launching Brownie. Brownie automatically attaches to the ganache instance where you can deploy the contracts. After closing Brownie, the chain and deployment artifacts will persist.
-
-## Switching Networks
+To deploy the smart contract to `kovan` use
 
 ```sh
-export WEB3_INFURA_PROJECT_ID=YourProjectID
-brownie console --network mainnet-fork
+yarn deploy --network kovan
 ```
+
+Replace `kovan` with the name of the network you wish you use, _e.g._, `mainnet`.
 
 ## Running Tests and Code Coverage
 
@@ -344,21 +265,3 @@ See <https://github.com/crytic/slither> for more information.
 The static analysis has been integrated into our pipeline with GitHub Actions.
 To see the result of the analysis,
 see <https://github.com/Ethernautas/renpool/actions/workflows/analysis.yaml>.
-
-## Deploying to a Live Network
-
-To deploy your contracts to the mainnet or one of the test nets, first modify [`scripts/deploy.py`](`scripts/deploy.py`) to [use a funded account](https://eth-brownie.readthedocs.io/en/stable/account-management.html).
-
-Then:
-
-```sh
-yarn deploy --network kovan
-```
-
-Replace `kovan` with the name of the network you wish you use.
-You may also wish to adjust Brownie's [network settings](https://eth-brownie.readthedocs.io/en/stable/network-management.html).
-
-For contracts deployed on a live network, the deployment information is stored permanently unless you:
-
-- Delete or rename the contract file or
-- Manually remove the `client/src/artifacts/` directory
