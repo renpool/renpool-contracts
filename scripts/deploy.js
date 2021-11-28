@@ -5,12 +5,15 @@ const {
     network: {
         config: {
             renTokenAddr,
+            topRenTokenHolderAddr,
             darknodeRegistryAddr,
             darknodePaymentAddr,
             claimRewardsAddr,
             gatewayAddr,
-        }
+        },
+        provider,
     } } = require('hardhat');
+const RenToken = require('@renproject/sol/build/testnet/RenToken.json');
 const chalk = require('chalk');
 
 function sleep(ms) {
@@ -23,15 +26,27 @@ const DECIMALS = 18;
 const DIGITS = bn(10).pow(DECIMALS);
 const POOL_BOND = bn(100_000).mul(DIGITS);
 
-async function main(print) {
+const print = console.log;
+
+async function faucet(renToken, account) {
+    await provider.request({ method: 'hardhat_impersonateAccount', params: [topRenTokenHolderAddr] });
+
+    const holder = await ethers.getSigner(topRenTokenHolderAddr);
+    const amount = POOL_BOND.mul(10);
+    await renToken.connect(holder).transfer(account.address, amount);
+
+    await provider.request({ method: 'hardhat_stopImpersonatingAccount', params: [topRenTokenHolderAddr] });
+}
+
+async function main() {
     print(`${chalk.italic('\u{1F680} RenPool contract deployment')}`);
     print(`Using network ${chalk.bold(hre.network.name)} (${chalk.bold(hre.network.config.chainId)})`);
 
-    print(`> Getting signers to deploy RenPool contract`);
+    print(`Getting signers to deploy RenPool contract`);
     const [owner] = await ethers.getSigners();
     const nodeOperator = owner;
 
-    print(`> Deploying ${chalk.bold('RenPool')} contract`);
+    print(`Deploying ${chalk.bold('RenPool')} contract`);
     const RenPool = await ethers.getContractFactory('RenPool');
     const renPool = await RenPool.connect(nodeOperator).deploy(
         renTokenAddr,
@@ -43,17 +58,17 @@ async function main(print) {
         POOL_BOND);
     await renPool.deployed();
 
-    print(`> Deployed to ${chalk.bold(renPool.address)} TX ${chalk.bold(renPool.deployTransaction.hash)}`);
+    print(`Deployed to ${chalk.bold(renPool.address)} TX ${chalk.bold(renPool.deployTransaction.hash)}`);
 
     if (hre.network.name === 'hardhat') {
-        print('> Skipping RenPool contract Etherscan verification')
+        print('Skipping RenPool contract Etherscan verification')
     } else {
-        print('> Waiting before verification');
+        print('Waiting before verification');
         await sleep(30000);
         const balance = await renPool.balanceOf(owner.address);
         print(`  Owner's balance is ${chalk.yellow(balance)}`);
 
-        print('> Verifying RenPool smart contract in Etherscan')
+        print('Verifying RenPool smart contract in Etherscan')
 
         await hre.run("verify:verify", {
             address: renPool.address,
@@ -69,18 +84,20 @@ async function main(print) {
         });
     }
 
-    return { renPool }
+    const renToken = new ethers.Contract(renTokenAddr, RenToken.abi, owner);
+
+    return { renPool, renToken, faucet };
 }
 
 if (require.main === module) {
-    main(console.log)
+    main()
         .then(() => process.exit(0))
         .catch(err => {
             console.error(err);
             process.exit(1);
         });
 } else {
-    module.exports = function() {
-        return main(function() {});
+    module.exports = function () {
+        return main();
     }
 }
