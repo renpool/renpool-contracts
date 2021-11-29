@@ -9,6 +9,14 @@ on:
 
 jobs:
 
+  check-abi:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - run: yarn install --frozen-lockfile
+      - run: yarn build
+      - run: git --no-pager diff --exit-code artifacts/contracts/RenPool.sol/RenPool.json
+
   test:
     runs-on: ubuntu-latest
     steps:
