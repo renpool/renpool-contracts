@@ -5,6 +5,29 @@ require("@nomiclabs/hardhat-waffle");
 require("hardhat-gas-reporter");
 require("solidity-coverage");
 
+const path = require('path');
+
+task('dev', 'Starts a JSON-RPC server on top of Hardhat Network after compiling the project and running a user-defined script')
+  .addPositionalParam("script", "A js file to be run within Hardhat's environment")
+  .setAction(async ({ script }, hre) => {
+    hre.dev = { script };
+    await hre.run("node", { message: "Hello, World!" });
+  });
+
+subtask('node:server-ready')
+  .setAction(async (taskArgs, hre, runSuper) => {
+    await runSuper(taskArgs);
+
+    if (hre.dev !== undefined) {
+      const script = hre.dev.script;
+      console.log(`Running script '${script}'`);
+
+      const scriptPath = path.resolve(script, ".");
+      require(scriptPath);
+    }
+
+  });
+
 const deployments = require('./ren-deployments.js');
 
 const FORK = process.env.FORK !== undefined ? process.env.FORK : 'kovan';
