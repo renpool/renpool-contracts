@@ -7,6 +7,8 @@ contract RenPoolFactory {
   address public owner;
   address[] public pools;
 
+  event PoolDeployed(address _from, address _pool);
+
   constructor() {
     owner = msg.sender;
   }
@@ -33,7 +35,7 @@ contract RenPoolFactory {
     returns(address)
   {
     // TODO: we should pass nodeOperator = msg.sender as a param
-    RenPool renPool = new RenPool(
+    RenPool pool = new RenPool(
       _renTokenAddr,
       _darknodeRegistryAddr,
       _darknodePaymentAddr,
@@ -43,8 +45,10 @@ contract RenPoolFactory {
       _bond
     );
 
-    address addr = address(renPool);
+    address addr = address(pool);
     pools.push(addr);
+
+    emit PoolDeployed(msg.sender, addr);
 
     return addr;
   }
