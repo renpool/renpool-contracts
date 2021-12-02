@@ -34,7 +34,8 @@ contract RenPoolFactory {
     external
     returns(address)
   {
-    // TODO: we should pass nodeOperator = msg.sender as a param
+    address nodeOperator = msg.sender;
+
     RenPool pool = new RenPool(
       _renTokenAddr,
       _darknodeRegistryAddr,
@@ -42,13 +43,14 @@ contract RenPoolFactory {
       _claimRewardsAddr,
       _gatewayRegistryAddr,
       owner,
+      nodeOperator,
       _bond
     );
 
     address addr = address(pool);
     pools.push(addr);
 
-    emit PoolDeployed(msg.sender, addr);
+    emit PoolDeployed(nodeOperator, addr);
 
     return addr;
   }
