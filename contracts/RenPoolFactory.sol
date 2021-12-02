@@ -19,7 +19,6 @@ contract RenPoolFactory {
    * @param _darknodePaymentAddr The DarknodePayment contract address.
    * @param _claimRewardsAddr The ClaimRewardsV1 contract address.
    * @param _gatewayRegistryAddr The GatewayRegistry contract address.
-   * @param _owner The protocol owner's address. Possibly a multising wallet.
    * @param _bond The amount of REN tokens required to register a darknode.
    */
   function deployPool(
@@ -28,14 +27,13 @@ contract RenPoolFactory {
     address _darknodePaymentAddr,
     address _claimRewardsAddr,
     address _gatewayRegistryAddr,
-    address _owner,
     uint256 _bond
   )
     external
-    returns(uint256)
+    returns(address)
   {
     // TODO: we should pass nodeOperator = msg.sender as a param
-    uint256 addr = new RenPool(
+    RenPool renPool = new RenPool(
       _renTokenAddr,
       _darknodeRegistryAddr,
       _darknodePaymentAddr,
@@ -45,6 +43,7 @@ contract RenPoolFactory {
       _bond
     );
 
+    address addr = address(renPool);
     pools.push(addr);
 
     return addr;

@@ -79,8 +79,6 @@ contract RenPool {
 		totalPooled = 0;
 		ownerFee = 5;
 		nodeOperatorFee = 5;
-
-		// TODO: register pool into RenPoolStore
 	}
 
 	modifier onlyNodeOperator() {
@@ -150,8 +148,8 @@ contract RenPool {
 	}
 
 	/**
-     * @notice Withdraw REN token to the user's wallet from the RenPool smart contract. 
-     * Cannot be called if the pool is locked. 
+     * @notice Withdraw REN token to the user's wallet from the RenPool smart contract.
+     * Cannot be called if the pool is locked.
      *
      * @param _amount The amount of REN to be withdrawn by `sender`.
 	 */
@@ -175,7 +173,7 @@ contract RenPool {
 
 	/**
      * @notice Requesting a withdraw in case the pool is locked. The amount
-     * that needs to be withdrawn will be replaced by another user using the 
+     * that needs to be withdrawn will be replaced by another user using the
      * fulfillWithdrawRequest method.
 	 *
 	 * @param _amount The amount of REN to be withdrawn.
