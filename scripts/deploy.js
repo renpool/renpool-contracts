@@ -98,7 +98,7 @@ if (require.main === module) {
             process.exit(1);
         });
 } else {
-    module.exports = function () {
-        return main();
-    }
+    main().then(p => {
+        module.exports = p;
+    })
 }

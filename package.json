@@ -13,6 +13,7 @@
     "test:mainnet": "FORK=mainnet hardhat test",
     "test:gas": "REPORT_GAS=true hardhat test",
     "deploy": "hardhat run scripts/deploy.js",
+    "dev": "hardhat dev scripts/deploy.js",
     "coverage": "hardhat coverage",
     "lint": "solhint 'contracts/**/*.sol'"
   },
