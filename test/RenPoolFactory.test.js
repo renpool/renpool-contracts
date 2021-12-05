@@ -56,6 +56,15 @@ describe('RenPoolFactory contract test', function () {
       const pools = await renPoolFactory.getPools();
 
       expect(pools.length).to.equal(1);
+
+      const RenPool = await getContractFactory('RenPool');
+      const renPool = await RenPool.attach(pools[0]);
+
+      expect(await renPool.owner()).to.equal(owner.address);
+      expect(await renPool.nodeOperator()).to.equal(nodeOperator.address);
+      expect(await renPool.bond()).to.equal(0);
+      expect(await renPool.isLocked()).to.equal(false);
+      expect(await renPool.totalPooled()).to.equal(0);
     });
 
   });
