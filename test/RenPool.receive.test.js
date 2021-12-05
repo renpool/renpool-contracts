@@ -13,13 +13,14 @@ describe('RenPool contract `receive` test', function () {
       ethers.constants.AddressZero,
       ethers.constants.AddressZero,
       signers[0].address,
+      signers[1].address,
       0);
     await renPool.deployed();
     return [renPool, ...signers]
   }
 
   it('should receive ETH and emit `EthDeposited` event', async function () {
-    const [renPool, owner, alice, bob] = await deploy();
+    const [renPool, owner, , alice, bob] = await deploy();
 
     await owner.sendTransaction({ to: renPool.address, value: 1000 });
     expect(await ethers.provider.getBalance(renPool.address)).to.be.equal(bn(1000));
