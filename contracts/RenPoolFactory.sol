@@ -23,7 +23,7 @@ contract RenPoolFactory {
    * @param _gatewayRegistryAddr The GatewayRegistry contract address.
    * @param _bond The amount of REN tokens required to register a darknode.
    */
-  function deployPool(
+  function deployNewPool(
     address _renTokenAddr,
     address _darknodeRegistryAddr,
     address _darknodePaymentAddr,
@@ -53,6 +53,10 @@ contract RenPoolFactory {
     emit PoolDeployed(nodeOperator, addr);
 
     return addr;
+  }
+
+  function getPools() external view returns(address[] memory) {
+    return pools;
   }
 }
 
