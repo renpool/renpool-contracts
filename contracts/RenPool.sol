@@ -54,7 +54,8 @@ contract RenPool {
 	 * @param _darknodePaymentAddr The DarknodePayment contract address.
 	 * @param _claimRewardsAddr The ClaimRewardsV1 contract address.
 	 * @param _gatewayRegistryAddr The GatewayRegistry contract address.
-	 * @param _owner The protocol owner's address. Possibly a multising wallet.
+	 * @param _owner The protocol's owner address. Possibly a multising wallet.
+	 * @param _nodeOperator The protocol's node operator address.
 	 * @param _bond The amount of REN tokens required to register a darknode.
 	 */
 	constructor(
@@ -64,11 +65,12 @@ contract RenPool {
 		address _claimRewardsAddr,
 		address _gatewayRegistryAddr,
 		address _owner,
+    address _nodeOperator,
 		uint256 _bond
 	)
 	{
 		owner = _owner;
-		nodeOperator = msg.sender;
+		nodeOperator = _nodeOperator;
 		renToken = IERC20(_renTokenAddr);
 		darknodeRegistry = IDarknodeRegistry(_darknodeRegistryAddr);
 		darknodePayment = IDarknodePayment(_darknodePaymentAddr);
@@ -79,8 +81,6 @@ contract RenPool {
 		totalPooled = 0;
 		ownerFee = 5;
 		nodeOperatorFee = 5;
-
-		// TODO: register pool into RenPoolStore
 	}
 
 	modifier onlyNodeOperator() {
@@ -150,8 +150,8 @@ contract RenPool {
 	}
 
 	/**
-     * @notice Withdraw REN token to the user's wallet from the RenPool smart contract. 
-     * Cannot be called if the pool is locked. 
+     * @notice Withdraw REN token to the user's wallet from the RenPool smart contract.
+     * Cannot be called if the pool is locked.
      *
      * @param _amount The amount of REN to be withdrawn by `sender`.
 	 */
@@ -175,7 +175,7 @@ contract RenPool {
 
 	/**
      * @notice Requesting a withdraw in case the pool is locked. The amount
-     * that needs to be withdrawn will be replaced by another user using the 
+     * that needs to be withdrawn will be replaced by another user using the
      * fulfillWithdrawRequest method.
 	 *
 	 * @param _amount The amount of REN to be withdrawn.

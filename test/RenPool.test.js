@@ -26,8 +26,6 @@ const RenToken = require('@renproject/sol/build/testnet/RenToken.json');
 const DarknodeRegistryLogicV1 = require('@renproject/sol/build/testnet/DarknodeRegistryLogicV1.json');
 const DarknodePayment = require('@renproject/sol/build/testnet/DarknodePayment.json');
 const GatewayRegistry = require('@renproject/sol/build/testnet/GatewayRegistry.json');
-// const RenBTC = require('@renproject/sol/build/testnet/RenBTC.json');
-// console.log('renBTC', JSON.stringify(RenBTC, null, 2))
 
 describe('RenPool contract test', function () {
 
@@ -36,7 +34,7 @@ describe('RenPool contract test', function () {
   const POOL_BOND = bn(100_000).mul(DIGITS);
 
   let owner, nodeOperator, alice, bob;
-  let renToken, darknodeRegistry, darknodePayment, gatewayRegistry, renBTC;
+  let renToken, darknodeRegistry, darknodePayment, gatewayRegistry;
   let renPool;
 
   let snapshotID;
@@ -48,7 +46,6 @@ describe('RenPool contract test', function () {
     darknodeRegistry = new Contract(darknodeRegistryAddr, DarknodeRegistryLogicV1.abi, owner);
     darknodePayment = new Contract(darknodePaymentAddr, DarknodePayment.abi, owner);
     gatewayRegistry = new Contract(gatewayRegistryAddr, GatewayRegistry.abi, owner);
-    // renBTC = new Contract(renBTCAddr, RenBTC.abi, owner);
 
     expect(await renToken.balanceOf(topRenTokenHolderAddr)).to.be.above(0);
     await provider.request({ method: 'hardhat_impersonateAccount', params: [topRenTokenHolderAddr] });
@@ -72,6 +69,7 @@ describe('RenPool contract test', function () {
       claimRewardsAddr,
       gatewayRegistryAddr,
       owner.address,
+      nodeOperator.address,
       POOL_BOND);
     await renPool.deployed();
     expect(await renToken.balanceOf(renPool.address)).to.equal(0);
