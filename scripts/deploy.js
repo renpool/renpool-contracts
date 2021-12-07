@@ -61,8 +61,29 @@ async function main() {
 
     print(`Deployed to ${chalk.bold(renPool.address)} TX ${chalk.bold(renPool.deployTransaction.hash)}`);
 
+    const renToken = new ethers.Contract(renTokenAddr, RenToken.abi, owner);
+
     if (hre.network.name === 'hardhat') {
         print('Skipping RenPool contract Etherscan verification')
+
+        await provider.request({ method: 'hardhat_impersonateAccount', params: [topRenTokenHolderAddr] });
+
+        print('Giving REN tokens to Hardhat signers');
+
+        const signer = await ethers.getSigner(topRenTokenHolderAddr);
+
+        for (const user of await ethers.getSigners()) {
+            const amount = POOL_BOND.mul(5);
+            await renToken.connect(signer).transfer(user.address, amount);
+            print(`Given ${amount} REN to ${user.address}`);
+        }
+
+        await provider.request({ method: 'hardhat_stopImpersonatingAccount', params: [topRenTokenHolderAddr] });
+
+        print('Setting up mining options');
+
+        await provider.send("evm_setAutomine", [false]);
+        await provider.send("evm_setIntervalMining", [5000]);
     } else {
         print('Waiting before verification');
         await sleep(30000);
@@ -84,8 +105,6 @@ async function main() {
             ],
         });
     }
-
-    const renToken = new ethers.Contract(renTokenAddr, RenToken.abi, owner);
 
     return { renPool, renToken, faucet };
 }
