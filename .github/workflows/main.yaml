@@ -23,8 +23,8 @@ jobs:
       - uses: actions/checkout@v2
       - run: yarn install --frozen-lockfile
       - run: touch .env && echo ALCHEMY_KEY=${{ secrets.ALCHEMY_KEY }} >> .env
-      - run: yarn test
-      - run: yarn test:mainnet
+      - run: yarn test:kovan-fork
+      - run: yarn test:mainnet-fork
 
   coverage:
     runs-on: ubuntu-latest
