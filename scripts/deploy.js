@@ -56,6 +56,7 @@ async function main() {
         claimRewardsAddr,
         gatewayRegistryAddr,
         owner.address,
+        nodeOperator.address,
         POOL_BOND);
     await renPool.deployed();
 
