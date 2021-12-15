@@ -121,6 +121,10 @@ contract RenPool {
 		emit PoolLocked();
 	}
 
+  function _deregisterDarknode() private {
+    darknodeRegistry.deregister(darknodeID);
+  }
+
 	function unlockPool() external onlyOwnerNodeOperator {
 		require(renToken.balanceOf(address(this)) > 0, "RenPool: Pool balance is zero");
 		isLocked = false;
@@ -199,6 +203,10 @@ contract RenPool {
 
 		withdrawRequests[sender] = _amount;
     totalWithdrawalRequested += _amount;
+
+    if(totalWithdrawalRequested > bond / 2) {
+      _deregisterDarknode();
+    }
 
 		emit RenWithdrawalRequested(sender, _amount);
 	}
@@ -299,7 +307,7 @@ contract RenPool {
 	 * to being able to call refund.
 	 */
 	function deregisterDarknode() external onlyOwnerNodeOperator {
-		darknodeRegistry.deregister(darknodeID);
+    _deregisterDarknode();
 	}
 
 	/**
