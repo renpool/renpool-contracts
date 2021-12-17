@@ -27,6 +27,7 @@ contract RenPool {
 
 	bool public isLocked;
   // ^ we could use enum instead POOL_STATUS = { OPEN /* 0 */, CLOSE /* 1 */ }
+  bool public isRegistered;
 
 	mapping(address => uint256) public balances;
 	mapping(address => uint256) public withdrawRequests;
@@ -82,6 +83,7 @@ contract RenPool {
 		gatewayRegistry = IGatewayRegistry(_gatewayRegistryAddr);
 		bond = _bond;
 		isLocked = false;
+    isRegistered = false;
 		totalPooled = 0;
     totalWithdrawalRequested = 0;
 		ownerFee = 5;
@@ -123,6 +125,7 @@ contract RenPool {
 
   function _deregisterDarknode() private {
     darknodeRegistry.deregister(darknodeID);
+    isRegistered = false;
   }
 
 	function unlockPool() external onlyOwnerNodeOperator {
@@ -204,9 +207,9 @@ contract RenPool {
 		withdrawRequests[sender] = _amount;
     totalWithdrawalRequested += _amount;
 
-    // if(totalWithdrawalRequested > bond / 2) {
-    //   _deregisterDarknode();
-    // }
+    if(isRegistered && totalWithdrawalRequested > bond / 2) {
+      _deregisterDarknode();
+    }
 
 		emit RenWithdrawalRequested(sender, _amount);
 	}
@@ -296,6 +299,7 @@ contract RenPool {
 
 		darknodeRegistry.register(_darknodeID, _publicKey);
 
+    isRegistered = true;
 		darknodeID = _darknodeID;
 		publicKey = _publicKey;
 	}
