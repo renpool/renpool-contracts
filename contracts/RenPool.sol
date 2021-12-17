@@ -204,9 +204,9 @@ contract RenPool {
 		withdrawRequests[sender] = _amount;
     totalWithdrawalRequested += _amount;
 
-    if(totalWithdrawalRequested > bond / 2) {
-      _deregisterDarknode();
-    }
+    // if(totalWithdrawalRequested > bond / 2) {
+    //   _deregisterDarknode();
+    // }
 
 		emit RenWithdrawalRequested(sender, _amount);
 	}
@@ -246,6 +246,8 @@ contract RenPool {
   function cancelWithdrawRequest() external {
     address sender = msg.sender;
     uint256 amount = withdrawRequests[sender];
+
+    require(amount > 0, "RenPool: invalid amount");
 
     totalWithdrawalRequested -= amount;
 

@@ -178,7 +178,7 @@ describe('RenPool contract test', function () {
 
   });
 
-  describe('withdraw/fulfillWithdrawRequest', function () {
+  describe('withdraw/requestWithdraw/fulfillWithdrawRequest', function () {
 
     [bn(1), POOL_BOND.sub(1)].forEach(amount => {
       it('should withdraw properly', async function () {
@@ -220,6 +220,39 @@ describe('RenPool contract test', function () {
       expect(await renToken.balanceOf(alice.address)).to.equal(aliceBalance);
       expect(await renPool.balanceOf(alice.address)).to.equal(0);
       expect(await renPool.totalPooled()).to.equal(0);
+    });
+
+    [bn(1), POOL_BOND].forEach(amount => {
+      it('should create a withdraw request', async function () {
+        // Lock pool
+        await renToken.connect(bob).approve(renPool.address, POOL_BOND);
+        await renPool.connect(bob).deposit(POOL_BOND);
+        expect(await renPool.isLocked()).to.be.true;
+
+        // Request withdraw
+        await renPool.connect(bob).requestWithdraw(amount);
+        expect(await renPool.withdrawRequests(bob.address)).to.equal(amount);
+        expect(await renPool.totalWithdrawalRequested()).to.equal(amount);
+      });
+    });
+
+    [bn(1), POOL_BOND].forEach(amount => {
+      it('should cancel a withdraw request', async function () {
+        // Lock pool
+        await renToken.connect(bob).approve(renPool.address, POOL_BOND);
+        await renPool.connect(bob).deposit(POOL_BOND);
+        expect(await renPool.isLocked()).to.be.true;
+
+        // Request withdraw
+        await renPool.connect(bob).requestWithdraw(amount);
+        expect(await renPool.withdrawRequests(bob.address)).to.equal(amount);
+        expect(await renPool.totalWithdrawalRequested()).to.equal(amount);
+
+        // Cancel withdraw request
+        await renPool.connect(bob).cancelWithdrawRequest();
+        expect(await renPool.withdrawRequests(bob.address)).to.equal(bn(0));
+        expect(await renPool.totalWithdrawalRequested()).to.equal(bn(0));
+      });
     });
 
     [bn(1), POOL_BOND].forEach(amount => {
