@@ -320,6 +320,7 @@ describe('RenPool contract test', function () {
 
       // Verify funds are transferred to the DarknodeRegistryStore contract
       // and the darknode is under 'pending registration' state
+      expect(await renPool.isRegistered()).to.be.true;
       expect(await renToken.balanceOf(darknodeRegistryStoreAddr)).to.equal(registryStoreBalance.add(POOL_BOND));
       expect(await renToken.balanceOf(renPool.address)).to.equal(0);
       expect(await darknodeRegistry.isPendingRegistration(NODE_ID)).to.be.true;
@@ -339,32 +340,54 @@ describe('RenPool contract test', function () {
       expect(await darknodeRegistry.getDarknodeOperator(NODE_ID)).to.equal(renPool.address);
     });
 
+    it('should fail when bond transfer is not aproved by node operator', async () => {
+      expect(alice).to.not.equal(nodeOperator);
+
+      // Lock pool
+      await renToken.connect(alice).approve(renPool.address, POOL_BOND);
+      await renPool.connect(alice).deposit(POOL_BOND);
+
+      // Attempt bond transfer approval
+      await expect(
+        renPool.connect(alice).approveBondTransfer()
+      ).to.be.revertedWith('RenPool: Unauthorized');
+    });
+
     it('should fail when darknode registration is not performed by node operator', async () => {
       expect(alice).to.not.equal(nodeOperator);
 
+      // Lock pool
       await renToken.connect(alice).approve(renPool.address, POOL_BOND);
       await renPool.connect(alice).deposit(POOL_BOND);
-      await renPool.connect(nodeOperator).approveBondTransfer();
 
+      // Approve bond transfer and attempt darknode registration
+      await renPool.connect(nodeOperator).approveBondTransfer();
       await expect(
         renPool.connect(alice).registerDarknode(NODE_ID, PUBLIC_KEY)
-      ).to.be.revertedWith('RenPool: Caller is not node operator');
+      ).to.be.revertedWith('RenPool: Unauthorized');
     });
 
     it('should fail when darknode registration is performed twice', async () => {
+      // Lock pool
       await renToken.connect(alice).approve(renPool.address, POOL_BOND);
       await renPool.connect(alice).deposit(POOL_BOND);
+
+      // Register darknode
       await renPool.connect(nodeOperator).approveBondTransfer();
       await renPool.connect(nodeOperator).registerDarknode(NODE_ID, PUBLIC_KEY)
 
+      // Attempt a new registration
       await expect(
         renPool.connect(nodeOperator).registerDarknode(NODE_ID, PUBLIC_KEY)
       ).to.be.revertedWith('DarknodeRegistry: must be refunded or never registered');
     });
 
     it('should fail when darknode registration is performed twice but preserves first registration data', async () => {
+      // Lock pool
       await renToken.connect(alice).approve(renPool.address, POOL_BOND);
       await renPool.connect(alice).deposit(POOL_BOND);
+
+      // Register darknode
       await renPool.connect(nodeOperator).approveBondTransfer();
       await renPool.connect(nodeOperator).registerDarknode(NODE_ID, PUBLIC_KEY)
 
@@ -427,7 +450,7 @@ describe('RenPool contract test', function () {
       // Attemping to deregister the darknode should fail when caller is not node operator
       await expect(
         renPool.connect(alice).deregisterDarknode()
-      ).to.be.revertedWith('RenPool: Caller is not owner nor node operator');
+      ).to.be.revertedWith('RenPool: Unauthorized');
 
       // Make sure node is still registered and nodeID and publicKey are still stored
       // in the RenPool contract
