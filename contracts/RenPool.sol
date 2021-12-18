@@ -30,7 +30,7 @@ contract RenPool {
   bool public isRegistered;
 
 	mapping(address => uint256) public balances;
-	mapping(address => uint256) public withdrawRequests;
+	mapping(address => uint256) public withdrawalRequests;
   mapping(address => uint256) public nonces;
 
 	IERC20 public renToken;
@@ -189,14 +189,14 @@ contract RenPool {
 	/**
    * @notice Requesting a withdraw in case the pool is locked. The amount
    * that needs to be withdrawn will be replaced by another user using the
-   * fulfillWithdrawRequest method.
+   * fulfillWithdrawalRequest method.
 	 *
 	 * @param _amount The amount of REN to be withdrawn.
 	 *
 	 * @dev Users can have up to a single request active. In case of several
 	 * calls to this method, only the last request will be preserved.
 	 */
-	function requestWithdraw(uint256 _amount) external {
+	function requestWithdrawal(uint256 _amount) external {
 		address sender = msg.sender;
 		uint256 senderBalance = balances[sender];
 
@@ -204,7 +204,7 @@ contract RenPool {
 		require(senderBalance > 0 && senderBalance >= _amount, "RenPool: Insufficient funds");
 		require(isLocked, "RenPool: Pool is not locked");
 
-		withdrawRequests[sender] = _amount;
+		withdrawalRequests[sender] = _amount;
     totalWithdrawalRequested += _amount;
 
     if(isRegistered && totalWithdrawalRequested > bond / 2) {
@@ -220,9 +220,9 @@ contract RenPool {
 	 *
 	 * @param _target The amount of REN to be withdrawn.
 	 */
-	function fulfillWithdrawRequest(address _target) external {
+	function fulfillWithdrawalRequest(address _target) external {
 		address sender = msg.sender;
-		uint256 amount = withdrawRequests[_target];
+		uint256 amount = withdrawalRequests[_target];
 
     require(amount > 0, "RenPool: invalid amount");
 		require(isLocked, "RenPool: Pool is not locked");
@@ -231,7 +231,7 @@ contract RenPool {
 		balances[_target] -= amount;
     totalWithdrawalRequested -= amount;
 
-		delete withdrawRequests[_target];
+		delete withdrawalRequests[_target];
 
 		// Transfer funds from sender to _target
 		require(
@@ -246,15 +246,15 @@ contract RenPool {
     emit RenWithdrawalRequestFulfilled(sender, amount);
 	}
 
-  function cancelWithdrawRequest() external {
+  function cancelWithdrawalRequest() external {
     address sender = msg.sender;
-    uint256 amount = withdrawRequests[sender];
+    uint256 amount = withdrawalRequests[sender];
 
     require(amount > 0, "RenPool: invalid amount");
 
     totalWithdrawalRequested -= amount;
 
-    delete withdrawRequests[sender];
+    delete withdrawalRequests[sender];
 
     emit RenWithdrawalRequestCancelled(sender, amount);
   }

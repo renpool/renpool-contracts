@@ -178,7 +178,7 @@ describe('RenPool contract test', function () {
 
   });
 
-  describe('withdraw/requestWithdraw/fulfillWithdrawRequest', function () {
+  describe('withdraw/requestWithdrawal/fulfillWithdrawalRequest', function () {
 
     [bn(1), POOL_BOND.sub(1)].forEach(amount => {
       it('should withdraw properly', async function () {
@@ -230,8 +230,8 @@ describe('RenPool contract test', function () {
         expect(await renPool.isLocked()).to.be.true;
 
         // Request withdraw
-        await renPool.connect(bob).requestWithdraw(amount);
-        expect(await renPool.withdrawRequests(bob.address)).to.equal(amount);
+        await renPool.connect(bob).requestWithdrawal(amount);
+        expect(await renPool.withdrawalRequests(bob.address)).to.equal(amount);
         expect(await renPool.totalWithdrawalRequested()).to.equal(amount);
       });
     });
@@ -244,13 +244,13 @@ describe('RenPool contract test', function () {
         expect(await renPool.isLocked()).to.be.true;
 
         // Request withdraw
-        await renPool.connect(bob).requestWithdraw(amount);
-        expect(await renPool.withdrawRequests(bob.address)).to.equal(amount);
+        await renPool.connect(bob).requestWithdrawal(amount);
+        expect(await renPool.withdrawalRequests(bob.address)).to.equal(amount);
         expect(await renPool.totalWithdrawalRequested()).to.equal(amount);
 
         // Cancel withdraw request
-        await renPool.connect(bob).cancelWithdrawRequest();
-        expect(await renPool.withdrawRequests(bob.address)).to.equal(bn(0));
+        await renPool.connect(bob).cancelWithdrawalRequest();
+        expect(await renPool.withdrawalRequests(bob.address)).to.equal(bn(0));
         expect(await renPool.totalWithdrawalRequested()).to.equal(bn(0));
       });
     });
@@ -266,12 +266,12 @@ describe('RenPool contract test', function () {
         expect(await renPool.isLocked()).to.be.true;
 
         // Request withdraw
-        await renPool.connect(bob).requestWithdraw(amount);
-        expect(await renPool.withdrawRequests(bob.address)).to.equal(amount);
+        await renPool.connect(bob).requestWithdrawal(amount);
+        expect(await renPool.withdrawalRequests(bob.address)).to.equal(amount);
 
         // Fulfill withdraw request
         await renToken.connect(alice).approve(renPool.address, POOL_BOND);
-        await renPool.connect(alice).fulfillWithdrawRequest(bob.address);
+        await renPool.connect(alice).fulfillWithdrawalRequest(bob.address);
 
         // Verify correct balances
         expect(await renToken.balanceOf(renPool.address)).to.equal(POOL_BOND);
@@ -447,8 +447,8 @@ describe('RenPool contract test', function () {
         await darknodeRegistry.epoch();
 
         // Request withdraw to trigger deregistration
-        await renPool.connect(bob).requestWithdraw(amount);
-        expect(await renPool.withdrawRequests(bob.address)).to.equal(amount);
+        await renPool.connect(bob).requestWithdrawal(amount);
+        expect(await renPool.withdrawalRequests(bob.address)).to.equal(amount);
 
         // Jump one epoch forward for deregitration to settle
         await increaseMonth();
