@@ -432,6 +432,37 @@ describe('RenPool contract test', function () {
       expect(await renPool.publicKey()).to.equalIgnoreCase(PUBLIC_KEY);
     });
 
+    [POOL_BOND.div(2).add(1), POOL_BOND].forEach(amount => {
+      it('should automatically deregister darknode when total withdrawal requested surpasses 0.5 of bond', async function () {
+        // Lock pool
+        await renToken.connect(bob).approve(renPool.address, POOL_BOND);
+        await renPool.connect(bob).deposit(POOL_BOND);
+
+        // Register darknode
+        await renPool.connect(nodeOperator).approveBondTransfer();
+        await renPool.connect(nodeOperator).registerDarknode(NODE_ID, PUBLIC_KEY);
+
+        // Jump one epoch forward for registration to settle
+        await increaseMonth();
+        await darknodeRegistry.epoch();
+
+        // Request withdraw to trigger deregistration
+        await renPool.connect(bob).requestWithdraw(amount);
+        expect(await renPool.withdrawRequests(bob.address)).to.equal(amount);
+
+        // Jump one epoch forward for deregitration to settle
+        await increaseMonth();
+        await darknodeRegistry.epoch();
+
+        // Verify state
+        expect(await darknodeRegistry.isDeregistered(NODE_ID)).to.be.true;
+
+        // Make sure darknodeID and publicKey are still stored in the RenPool contract
+        expect(await renPool.darknodeID()).to.equalIgnoreCase(NODE_ID);
+        expect(await renPool.publicKey()).to.equalIgnoreCase(PUBLIC_KEY);
+      });
+    })
+
     it('should fail when darknode deregistration is not performed by node operator', async () => {
       expect(alice).to.not.equal(nodeOperator);
 
