@@ -223,13 +223,13 @@ describe('RenPool contract test', function () {
     });
 
     [bn(1), POOL_BOND].forEach(amount => {
-      it('should create a withdraw request', async function () {
+      it('should create a withdrawal request', async function () {
         // Lock pool
         await renToken.connect(bob).approve(renPool.address, POOL_BOND);
         await renPool.connect(bob).deposit(POOL_BOND);
         expect(await renPool.isLocked()).to.be.true;
 
-        // Request withdraw
+        // Request withdrawal
         await renPool.connect(bob).requestWithdrawal(amount);
         expect(await renPool.withdrawalRequests(bob.address)).to.equal(amount);
         expect(await renPool.totalWithdrawalRequested()).to.equal(amount);
@@ -237,18 +237,18 @@ describe('RenPool contract test', function () {
     });
 
     [bn(1), POOL_BOND].forEach(amount => {
-      it('should cancel a withdraw request', async function () {
+      it('should cancel a withdrawal request', async function () {
         // Lock pool
         await renToken.connect(bob).approve(renPool.address, POOL_BOND);
         await renPool.connect(bob).deposit(POOL_BOND);
         expect(await renPool.isLocked()).to.be.true;
 
-        // Request withdraw
+        // Request withdrawal
         await renPool.connect(bob).requestWithdrawal(amount);
         expect(await renPool.withdrawalRequests(bob.address)).to.equal(amount);
         expect(await renPool.totalWithdrawalRequested()).to.equal(amount);
 
-        // Cancel withdraw request
+        // Cancel withdrawal request
         await renPool.connect(bob).cancelWithdrawalRequest();
         expect(await renPool.withdrawalRequests(bob.address)).to.equal(bn(0));
         expect(await renPool.totalWithdrawalRequested()).to.equal(bn(0));
@@ -265,11 +265,11 @@ describe('RenPool contract test', function () {
         await renPool.connect(bob).deposit(POOL_BOND);
         expect(await renPool.isLocked()).to.be.true;
 
-        // Request withdraw
+        // Request withdrawal
         await renPool.connect(bob).requestWithdrawal(amount);
         expect(await renPool.withdrawalRequests(bob.address)).to.equal(amount);
 
-        // Fulfill withdraw request
+        // Fulfill withdrawal request
         await renToken.connect(alice).approve(renPool.address, POOL_BOND);
         await renPool.connect(alice).fulfillWithdrawalRequest(bob.address);
 
