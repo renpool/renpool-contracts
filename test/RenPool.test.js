@@ -340,7 +340,7 @@ describe('RenPool contract test', function () {
       expect(await darknodeRegistry.getDarknodeOperator(NODE_ID)).to.equal(renPool.address);
     });
 
-    it('should fail when bond transfer is not aproved by node operator', async () => {
+    it('should fail when bond transfer is not approved by node operator', async () => {
       expect(alice).to.not.equal(nodeOperator);
 
       // Lock pool

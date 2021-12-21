@@ -172,7 +172,7 @@ contract RenPool {
 		uint256 senderBalance = balances[sender];
 
 		require(_amount > 0, "RenPool: Invalid amount");
-		require(senderBalance > 0 && senderBalance >= _amount, "RenPool: Insufficient funds");
+		require(senderBalance >= _amount, "RenPool: Insufficient funds");
 		require(!isLocked, "RenPool: Pool is locked");
 
 		totalPooled -= _amount;
@@ -201,7 +201,7 @@ contract RenPool {
 		uint256 senderBalance = balances[sender];
 
 		require(_amount > 0, "RenPool: Invalid amount");
-		require(senderBalance > 0 && senderBalance >= _amount, "RenPool: Insufficient funds");
+		require(senderBalance >= _amount, "RenPool: Insufficient funds");
 		require(isLocked, "RenPool: Pool is not locked");
 
 		withdrawalRequests[sender] = _amount;
