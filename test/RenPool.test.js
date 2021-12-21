@@ -178,7 +178,7 @@ describe('RenPool contract test', function () {
 
   });
 
-  describe('withdraw/fulfillWithdrawRequest', function () {
+  describe('withdraw/requestWithdrawal/fulfillWithdrawalRequest', function () {
 
     [bn(1), POOL_BOND.sub(1)].forEach(amount => {
       it('should withdraw properly', async function () {
@@ -223,6 +223,39 @@ describe('RenPool contract test', function () {
     });
 
     [bn(1), POOL_BOND].forEach(amount => {
+      it('should create a withdrawal request', async function () {
+        // Lock pool
+        await renToken.connect(bob).approve(renPool.address, POOL_BOND);
+        await renPool.connect(bob).deposit(POOL_BOND);
+        expect(await renPool.isLocked()).to.be.true;
+
+        // Request withdrawal
+        await renPool.connect(bob).requestWithdrawal(amount);
+        expect(await renPool.withdrawalRequests(bob.address)).to.equal(amount);
+        expect(await renPool.totalWithdrawalRequested()).to.equal(amount);
+      });
+    });
+
+    [bn(1), POOL_BOND].forEach(amount => {
+      it('should cancel a withdrawal request', async function () {
+        // Lock pool
+        await renToken.connect(bob).approve(renPool.address, POOL_BOND);
+        await renPool.connect(bob).deposit(POOL_BOND);
+        expect(await renPool.isLocked()).to.be.true;
+
+        // Request withdrawal
+        await renPool.connect(bob).requestWithdrawal(amount);
+        expect(await renPool.withdrawalRequests(bob.address)).to.equal(amount);
+        expect(await renPool.totalWithdrawalRequested()).to.equal(amount);
+
+        // Cancel withdrawal request
+        await renPool.connect(bob).cancelWithdrawalRequest();
+        expect(await renPool.withdrawalRequests(bob.address)).to.equal(bn(0));
+        expect(await renPool.totalWithdrawalRequested()).to.equal(bn(0));
+      });
+    });
+
+    [bn(1), POOL_BOND].forEach(amount => {
       it('should fulfill withdraw properly', async function () {
         const aliceBalance = await renToken.balanceOf(alice.address);
         const bobBalance = await renToken.balanceOf(bob.address);
@@ -232,13 +265,13 @@ describe('RenPool contract test', function () {
         await renPool.connect(bob).deposit(POOL_BOND);
         expect(await renPool.isLocked()).to.be.true;
 
-        // Request withdraw
-        await renPool.connect(bob).requestWithdraw(amount);
-        expect(await renPool.withdrawRequests(bob.address)).to.equal(amount);
+        // Request withdrawal
+        await renPool.connect(bob).requestWithdrawal(amount);
+        expect(await renPool.withdrawalRequests(bob.address)).to.equal(amount);
 
-        // Fulfill withdraw request
+        // Fulfill withdrawal request
         await renToken.connect(alice).approve(renPool.address, POOL_BOND);
-        await renPool.connect(alice).fulfillWithdrawRequest(bob.address);
+        await renPool.connect(alice).fulfillWithdrawalRequest(bob.address);
 
         // Verify correct balances
         expect(await renToken.balanceOf(renPool.address)).to.equal(POOL_BOND);
@@ -287,6 +320,7 @@ describe('RenPool contract test', function () {
 
       // Verify funds are transferred to the DarknodeRegistryStore contract
       // and the darknode is under 'pending registration' state
+      expect(await renPool.isRegistered()).to.be.true;
       expect(await renToken.balanceOf(darknodeRegistryStoreAddr)).to.equal(registryStoreBalance.add(POOL_BOND));
       expect(await renToken.balanceOf(renPool.address)).to.equal(0);
       expect(await darknodeRegistry.isPendingRegistration(NODE_ID)).to.be.true;
@@ -306,32 +340,54 @@ describe('RenPool contract test', function () {
       expect(await darknodeRegistry.getDarknodeOperator(NODE_ID)).to.equal(renPool.address);
     });
 
+    it('should fail when bond transfer is not approved by node operator', async () => {
+      expect(alice).to.not.equal(nodeOperator);
+
+      // Lock pool
+      await renToken.connect(alice).approve(renPool.address, POOL_BOND);
+      await renPool.connect(alice).deposit(POOL_BOND);
+
+      // Attempt bond transfer approval
+      await expect(
+        renPool.connect(alice).approveBondTransfer()
+      ).to.be.revertedWith('RenPool: Unauthorized');
+    });
+
     it('should fail when darknode registration is not performed by node operator', async () => {
       expect(alice).to.not.equal(nodeOperator);
 
+      // Lock pool
       await renToken.connect(alice).approve(renPool.address, POOL_BOND);
       await renPool.connect(alice).deposit(POOL_BOND);
-      await renPool.connect(nodeOperator).approveBondTransfer();
 
+      // Approve bond transfer and attempt darknode registration
+      await renPool.connect(nodeOperator).approveBondTransfer();
       await expect(
         renPool.connect(alice).registerDarknode(NODE_ID, PUBLIC_KEY)
-      ).to.be.revertedWith('RenPool: Caller is not node operator');
+      ).to.be.revertedWith('RenPool: Unauthorized');
     });
 
     it('should fail when darknode registration is performed twice', async () => {
+      // Lock pool
       await renToken.connect(alice).approve(renPool.address, POOL_BOND);
       await renPool.connect(alice).deposit(POOL_BOND);
+
+      // Register darknode
       await renPool.connect(nodeOperator).approveBondTransfer();
       await renPool.connect(nodeOperator).registerDarknode(NODE_ID, PUBLIC_KEY)
 
+      // Attempt a new registration
       await expect(
         renPool.connect(nodeOperator).registerDarknode(NODE_ID, PUBLIC_KEY)
       ).to.be.revertedWith('DarknodeRegistry: must be refunded or never registered');
     });
 
     it('should fail when darknode registration is performed twice but preserves first registration data', async () => {
+      // Lock pool
       await renToken.connect(alice).approve(renPool.address, POOL_BOND);
       await renPool.connect(alice).deposit(POOL_BOND);
+
+      // Register darknode
       await renPool.connect(nodeOperator).approveBondTransfer();
       await renPool.connect(nodeOperator).registerDarknode(NODE_ID, PUBLIC_KEY)
 
@@ -376,6 +432,37 @@ describe('RenPool contract test', function () {
       expect(await renPool.publicKey()).to.equalIgnoreCase(PUBLIC_KEY);
     });
 
+    [POOL_BOND.div(2).add(1), POOL_BOND].forEach(amount => {
+      it('should automatically deregister darknode when total withdrawal requested surpasses 0.5 of bond', async function () {
+        // Lock pool
+        await renToken.connect(bob).approve(renPool.address, POOL_BOND);
+        await renPool.connect(bob).deposit(POOL_BOND);
+
+        // Register darknode
+        await renPool.connect(nodeOperator).approveBondTransfer();
+        await renPool.connect(nodeOperator).registerDarknode(NODE_ID, PUBLIC_KEY);
+
+        // Jump one epoch forward for registration to settle
+        await increaseMonth();
+        await darknodeRegistry.epoch();
+
+        // Request withdraw to trigger deregistration
+        await renPool.connect(bob).requestWithdrawal(amount);
+        expect(await renPool.withdrawalRequests(bob.address)).to.equal(amount);
+
+        // Jump one epoch forward for deregitration to settle
+        await increaseMonth();
+        await darknodeRegistry.epoch();
+
+        // Verify state
+        expect(await darknodeRegistry.isDeregistered(NODE_ID)).to.be.true;
+
+        // Make sure darknodeID and publicKey are still stored in the RenPool contract
+        expect(await renPool.darknodeID()).to.equalIgnoreCase(NODE_ID);
+        expect(await renPool.publicKey()).to.equalIgnoreCase(PUBLIC_KEY);
+      });
+    })
+
     it('should fail when darknode deregistration is not performed by node operator', async () => {
       expect(alice).to.not.equal(nodeOperator);
 
@@ -394,7 +481,7 @@ describe('RenPool contract test', function () {
       // Attemping to deregister the darknode should fail when caller is not node operator
       await expect(
         renPool.connect(alice).deregisterDarknode()
-      ).to.be.revertedWith('RenPool: Caller is not owner nor node operator');
+      ).to.be.revertedWith('RenPool: Unauthorized');
 
       // Make sure node is still registered and nodeID and publicKey are still stored
       // in the RenPool contract

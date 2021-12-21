@@ -21,14 +21,16 @@ contract RenPool {
 
 	uint256 public bond;
 	uint256 public totalPooled;
+	uint256 public totalWithdrawalRequested;
 	uint256 public ownerFee; // Percentage
 	uint256 public nodeOperatorFee; // Percentage
 
 	bool public isLocked;
   // ^ we could use enum instead POOL_STATUS = { OPEN /* 0 */, CLOSE /* 1 */ }
+  bool public isRegistered;
 
 	mapping(address => uint256) public balances;
-	mapping(address => uint256) public withdrawRequests;
+	mapping(address => uint256) public withdrawalRequests;
   mapping(address => uint256) public nonces;
 
 	IERC20 public renToken;
@@ -39,6 +41,9 @@ contract RenPool {
 
 	event RenDeposited(address indexed _from, uint256 _amount);
 	event RenWithdrawn(address indexed _from, uint256 _amount);
+	event RenWithdrawalRequested(address indexed _from, uint256 _amount);
+  event RenWithdrawalRequestFulfilled(address indexed _from, uint256 _amount);
+	event RenWithdrawalRequestCancelled(address indexed _from, uint256 _amount);
 	event EthDeposited(address indexed _from, uint256 _amount);
 	event EthWithdrawn(address indexed _from, uint256 _amount);
 	event PoolLocked();
@@ -78,7 +83,9 @@ contract RenPool {
 		gatewayRegistry = IGatewayRegistry(_gatewayRegistryAddr);
 		bond = _bond;
 		isLocked = false;
+    isRegistered = false;
 		totalPooled = 0;
+    totalWithdrawalRequested = 0;
 		ownerFee = 5;
 		nodeOperatorFee = 5;
 	}
@@ -86,7 +93,7 @@ contract RenPool {
 	modifier onlyNodeOperator() {
 		require (
 			msg.sender == nodeOperator,
-			"RenPool: Caller is not node operator"
+			"RenPool: Unauthorized"
 		);
 		_;
 	}
@@ -94,7 +101,7 @@ contract RenPool {
 	modifier onlyOwnerNodeOperator() {
 		require (
 			msg.sender == owner || msg.sender == nodeOperator,
-			"RenPool: Caller is not owner nor node operator"
+			"RenPool: Unauthorized"
 		);
 		_;
 	}
@@ -102,7 +109,7 @@ contract RenPool {
 	modifier onlyOwner() {
 		require (
 			msg.sender == owner,
-			"RenPool: Caller is not owner"
+			"RenPool: Unauthorized"
 		);
 		_;
 	}
@@ -116,8 +123,13 @@ contract RenPool {
 		emit PoolLocked();
 	}
 
+  function _deregisterDarknode() private {
+    darknodeRegistry.deregister(darknodeID);
+    isRegistered = false;
+  }
+
 	function unlockPool() external onlyOwnerNodeOperator {
-		require(renToken.balanceOf(address(this)) > 0, "Pool balance is zero");
+		require(renToken.balanceOf(address(this)) > 0, "RenPool: Pool balance is zero");
 		isLocked = false;
 		emit PoolUnlocked();
 	}
@@ -159,76 +171,93 @@ contract RenPool {
 		address sender = msg.sender;
 		uint256 senderBalance = balances[sender];
 
-		require(senderBalance > 0 && senderBalance >= _amount, "Insufficient funds");
-		require(!isLocked, "Pool is locked");
+		require(_amount > 0, "RenPool: Invalid amount");
+		require(senderBalance >= _amount, "RenPool: Insufficient funds");
+		require(!isLocked, "RenPool: Pool is locked");
 
 		totalPooled -= _amount;
 		balances[sender] -= _amount;
 
 		require(
 			renToken.transfer(sender, _amount),
-			"Withdraw failed"
+			"RenPool: Withdraw failed"
 		);
 
 		emit RenWithdrawn(sender, _amount);
 	}
 
 	/**
-     * @notice Requesting a withdraw in case the pool is locked. The amount
-     * that needs to be withdrawn will be replaced by another user using the
-     * fulfillWithdrawRequest method.
+   * @notice Requesting a withdraw in case the pool is locked. The amount
+   * that needs to be withdrawn will be replaced by another user using the
+   * fulfillWithdrawalRequest method.
 	 *
 	 * @param _amount The amount of REN to be withdrawn.
 	 *
 	 * @dev Users can have up to a single request active. In case of several
 	 * calls to this method, only the last request will be preserved.
 	 */
-	function requestWithdraw(uint256 _amount) external {
+	function requestWithdrawal(uint256 _amount) external {
 		address sender = msg.sender;
 		uint256 senderBalance = balances[sender];
 
-		require(senderBalance > 0 && senderBalance >= _amount, "Insufficient funds");
-		require(isLocked, "Pool is not locked");
+		require(_amount > 0, "RenPool: Invalid amount");
+		require(senderBalance >= _amount, "RenPool: Insufficient funds");
+		require(isLocked, "RenPool: Pool is not locked");
 
-		withdrawRequests[sender] = _amount;
+		withdrawalRequests[sender] = _amount;
+    totalWithdrawalRequested += _amount;
 
-		// TODO emit event
+    if(isRegistered && totalWithdrawalRequested > bond / 2) {
+      _deregisterDarknode();
+    }
+
+		emit RenWithdrawalRequested(sender, _amount);
 	}
 
 	/**
-     * @notice User wanting to fullill the withdraw request will pay the amount
+   * @notice User wanting to fulfill the withdraw request will pay the amount
 	 * the user wanting to withdraw his money.
 	 *
 	 * @param _target The amount of REN to be withdrawn.
 	 */
-	function fulfillWithdrawRequest(address _target) external {
+	function fulfillWithdrawalRequest(address _target) external {
 		address sender = msg.sender;
-		uint256 amount = withdrawRequests[_target];
-		// ^ This could not be defined plus make sure amount > 0
-		// TODO: make sure user cannot fullfil his own request
-		// TODO: add test for when _target doesn't have an associated withdrawRequest
+		uint256 amount = withdrawalRequests[_target];
 
-		require(isLocked, "Pool is not locked");
+    require(amount > 0, "RenPool: invalid amount");
+		require(isLocked, "RenPool: Pool is not locked");
 
 		balances[sender] += amount;
 		balances[_target] -= amount;
-		delete withdrawRequests[_target];
+    totalWithdrawalRequested -= amount;
+
+		delete withdrawalRequests[_target];
 
 		// Transfer funds from sender to _target
 		require(
 			renToken.transferFrom(sender, address(this), amount),
-			"Deposit failed"
+			"RenPool: Deposit failed"
 		);
 		require(
 			renToken.transfer(_target, amount),
-			"Refund failed"
+			"RenPool: Refund failed"
 		);
 
-		// TODO emit event
+    emit RenWithdrawalRequestFulfilled(sender, amount);
 	}
 
-	// TODO: cancelWithdrawRequest
-	// TODO: getWithdrawRequests
+  function cancelWithdrawalRequest() external {
+    address sender = msg.sender;
+    uint256 amount = withdrawalRequests[sender];
+
+    require(amount > 0, "RenPool: invalid amount");
+
+    totalWithdrawalRequested -= amount;
+
+    delete withdrawalRequests[sender];
+
+    emit RenWithdrawalRequestCancelled(sender, amount);
+  }
 
 	/**
 	 * @notice Return REN balance for the given address.
@@ -244,11 +273,11 @@ contract RenPool {
 	 * registering the darknode.
 	 */
 	function approveBondTransfer() external onlyNodeOperator {
-		require(isLocked, "Pool is not locked");
+		require(isLocked, "RenPool: Pool is not locked");
 
 		require(
 			renToken.approve(address(darknodeRegistry), bond),
-			"Bond transfer failed"
+			"RenPool: Bond transfer failed"
 		);
 	}
 
@@ -266,10 +295,11 @@ contract RenPool {
 	 * other darknodes and traders to encrypt messages to the trader.
 	 */
 	function registerDarknode(address _darknodeID, bytes calldata _publicKey) external onlyNodeOperator {
-		require(isLocked, "Pool is not locked");
+		require(isLocked, "RenPool: Pool is not locked");
 
 		darknodeRegistry.register(_darknodeID, _publicKey);
 
+    isRegistered = true;
 		darknodeID = _darknodeID;
 		publicKey = _publicKey;
 	}
@@ -283,7 +313,7 @@ contract RenPool {
 	 * to being able to call refund.
 	 */
 	function deregisterDarknode() external onlyOwnerNodeOperator {
-		darknodeRegistry.deregister(darknodeID);
+    _deregisterDarknode();
 	}
 
 	/**
