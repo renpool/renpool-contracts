@@ -37,6 +37,7 @@ export type Artifact = {
 };
 
 export const RenPool: Artifact;
+export const RenPoolFactory: Artifact;
 export const IERC20Standard: Artifact;
 export const IDarknodeRegistry: Artifact;
 
